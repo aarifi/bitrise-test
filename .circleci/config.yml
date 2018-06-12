@@ -59,7 +59,7 @@ jobs:
       - *save_cache
       - run:
           name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-          command: sudo chmod +x ./gradlew
+          command: chmod +x ./gradlew
       - run:
           name: Gradle build (release)
           command: ./gradlew -PciBuild=true :app:assembleRelease
@@ -83,7 +83,7 @@ jobs:
       - *save_cache
       - run:
           name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-          command: sudo chmod +x ./gradlew
+          command: chmod +x ./gradlew
       - run:
           name: Run unit tests
           command: ./gradlew -PciBuild=true :app:testDebugUnitTest
