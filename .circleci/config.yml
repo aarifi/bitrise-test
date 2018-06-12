@@ -105,6 +105,10 @@ jobs:
       - checkout
       - *attach_release_workspace
       - *restore_cache
+
+            - run:
+                name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+                command: sudo chmod +x ./gradlew
       - run:
           name: Download dependencies
           command: ./gradlew androidDependencies
