@@ -110,7 +110,7 @@ workflows:
   version: 2
   workflow:
     jobs:
-      - build_release
+#      - build_release
       - test_unit
       - deploy:
           filters:
@@ -118,5 +118,5 @@ workflows:
               only:
                 - master
           requires:
-            - build_release
+#            - build_release
             - test_unit
