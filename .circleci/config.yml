@@ -115,11 +115,7 @@ workflows:
     jobs:
 #      - build_release
       - test_unit
-      - deploy:
-          filters:
-            branches:
-              only:
-                - master
+
           requires:
 #            - build_release
             - test_unit
