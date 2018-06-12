@@ -47,35 +47,29 @@ references:
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m"'
 
 jobs:
- build:
-     working_directory: ~/code
-     docker:
-       - image: circleci/android:api-27-alpha
-     environment:
-       JVM_OPTS: -Xmx3200m
-     steps:
-       - checkout
-       - restore_cache:
-           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-       - run:
+  ## Build release APK
+  build_release:
+    <<: *android_config
+    steps:
+      - checkout
+      - *restore_cache
+      - run:
+          name: Download dependencies
+          command: ./gradlew androidDependencies
+      - *save_cache
+      - run:
           name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-          command: sudo chmod +x ./gradlew
-       - run:
-           name: Download Dependencies
-           command: ./gradlew androidDependencies
-       - save_cache:
-           paths:
-             - ~/.gradle
-           key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-       - run:
-           name: Run Tests
-           command: ./gradlew lint test
-       - store_artifacts:
-           path: app/build/reports
-           destination: reports
-       - store_test_results:
-           path: app/build/test-results
-       # See https://circleci.com/docs/2.0/deployment-integrations/ for deploy examples
+          command: chmod +x ./gradlew
+      - run:
+          name: Gradle build (release)
+          command: ./gradlew -PciBuild=true :app:assembleRelease
+      - *persist_release_workspace
+      - store_artifacts:
+          path: app/build/outputs/apk/
+          destination: /apk/
+      - store_artifacts:
+          path: app/build/outputs/mapping/
+          destination: /mapping/
 
   ## Run unit tests
   test_unit:
@@ -119,7 +113,7 @@ workflows:
   version: 2
   workflow:
     jobs:
-      - build
+#      - build_release
       - test_unit
       - deploy:
           filters:
@@ -127,5 +121,5 @@ workflows:
               only:
                 - master
           requires:
-            - build
+#            - build_release
             - test_unit
