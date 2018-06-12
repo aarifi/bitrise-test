@@ -57,6 +57,9 @@ jobs:
           name: Download dependencies
           command: ./gradlew androidDependencies
       - *save_cache
+       - run:
+            name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+            command: sudo chmod +x ./gradlew
       - run:
           name: Gradle build (release)
           command: ./gradlew -PciBuild=true :app:assembleRelease
