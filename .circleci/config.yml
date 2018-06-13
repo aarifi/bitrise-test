@@ -106,25 +106,18 @@ jobs:
               export GIT_COMMIT_DESC=$(git log --format=oneline -n 1 | sed -E 's/^[^ ]+ (.*)$/\1/g')
               curl -F file=@app/build/outputs/apk/debug/app-debug.apk -F channels=$SLACK_CHANNEL -F token=$SLACK_API_TOKEN -F title="${CIRCLE_PROJECT_REPONAME} | branch -> ${CIRCLE_BRANCH} | commit -> ${GIT_COMMIT_DESC}"  https://slack.com/api/files.upload
   prod-build:
-    docker:
-      # specify the version you desire here
-      - image: circleci/android:api-27-alpha
-    working_directory: ~/code
+ <<: *android_config
     steps:
       - checkout
+      - *restore_cache
       - run: echo "Running..."
-      - restore_cache:
-            key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-     - run:
+      - run:
            name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
            command: sudo chmod +x ./gradlew
       - run:
             name: Download Dependencies
             command: ./gradlew androidDependencies
-      - save_cache:
-            paths:
-              - ~/.gradle
-            key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+      - *save_cache
       - run:
             name: Initial build
             command: ./gradlew clean assembleRelease --no-daemon --stacktrace
@@ -143,7 +136,7 @@ jobs:
       - checkout
       - *restore_cache
       - run:
-          name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+          name: Chmod permissions #if permsission for Gradlew Dependencies fail, use this.
           command: sudo chmod +x ./gradlew
       - run:
           name: Download dependencies
