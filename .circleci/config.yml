@@ -177,7 +177,7 @@ jobs:
 
 workflows:
   version: 2
-  deploy:
+  workflow:
     jobs:
       - test_unit
       - check-build:
