@@ -194,6 +194,8 @@ workflows:
           filters:
             branches:
               only: develop
+            requires:
+              -test_unit
 
       - prod-build:
           filters:
