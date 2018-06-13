@@ -157,7 +157,7 @@ jobs:
           path: app/build/test-results/
           destination: /test-results/
 
-  ## Deploy release APK to Fabric Beta
+  ##Deploy release APK to Fabric Beta
   deploy:
     <<: *android_config
     steps:
