@@ -1,7 +1,7 @@
 version: 2
 
 references:
-## Cache
+  ## Cache
   cache_key: &cache_key
     key: cache-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "build.gradle" }}-{{ checksum "app/build.gradle" }}
   restore_cache: &restore_cache
@@ -47,101 +47,41 @@ references:
       GRADLE_OPTS: '-Dorg.gradle.jvmargs="-Xmx2048m"'
 
 jobs:
-  check-build:
-    docker:
-      # specify the version you desire here
-      - image: circleci/android:api-27-alpha
-    working_directory: ~/code
+  ## Build release APK
+  build_release:
+    <<: *android_config
     steps:
       - checkout
-      - run: echo "Running..."
-      - restore_cache:
-            key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+      - *restore_cache
       - run:
           name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
           command: sudo chmod +x ./gradlew
       - run:
-            name: Download Dependencies
-            command: ./gradlew androidDependencies
-      - save_cache:
-            paths:
-              - ~/.gradle
-            key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-      - run:
-            name: Initial build
-            command: ./gradlew clean assembleDebug --no-daemon --stacktrace
-      - store_artifacts:
-            path: app/build/outputs/apk/
-            destination: apks/
-  dev-build:
-    docker:
-      # specify the version you desire here
-      - image: circleci/android:api-27-alpha
-    working_directory: ~/code
-    steps:
-      - checkout
-      - run: echo "Running..."
-      - restore_cache:
-            key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
+          name: Download dependencies
+          command: ./gradlew androidDependencies
+      - *save_cache
       - run:
           name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-          command: sudo chmod +x ./gradlew
-
+          command: chmod +x ./gradlew
       - run:
-            name: Download Dependencies
-            command: ./gradlew androidDependencies
-      - save_cache:
-            paths:
-              - ~/.gradle
-            key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-      - run:
-            name: Initial build
-            command: ./gradlew clean assembleDebug --no-daemon --stacktrace
+          name: Gradle build (release)
+          command: ./gradlew -PciBuild=true :app:assembleRelease
+      - *persist_release_workspace
       - store_artifacts:
-            path: app/build/outputs/apk/
-            destination: apks/
-      - run:
-            name: Upload to Slack
-            command: |
-              export GIT_COMMIT_DESC=$(git log --format=oneline -n 1 | sed -E 's/^[^ ]+ (.*)$/\1/g')
-              curl -F file=@app/build/outputs/apk/debug/app-debug.apk -F channels=$SLACK_CHANNEL -F token=$SLACK_API_TOKEN -F title="${CIRCLE_PROJECT_REPONAME} | branch -> ${CIRCLE_BRANCH} | commit -> ${GIT_COMMIT_DESC}"  https://slack.com/api/files.upload
-  prod-build:
-     <<: *android_config
-     steps:
-       - checkout
-       - *restore_cache
-       - run:
-           name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-           command: sudo chmod +x ./gradlew
-       - run:
-           name: Download dependencies
-           command: ./gradlew androidDependencies
-       - *save_cache
-       - run:
-           name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-           command: chmod +x ./gradlew
-       - run:
-           name: Gradle build (release)
-           command: ./gradlew -PciBuild=true :app:assembleRelease
-       - *persist_release_workspace
-       - store_artifacts:
-           path: app/build/outputs/apk/
-           destination: /apk/
-      - run:
-            name: Upload to Slack
-            command: |
-              export GIT_COMMIT_DESC=$(git log --format=oneline -n 1 | sed -E 's/^[^ ]+ (.*)$/\1/g')
-              curl -F file=@app/build/outputs/apk/debug/app-debug.apk -F channels=$SLACK_CHANNEL -F token=$SLACK_API_TOKEN -F title="${CIRCLE_PROJECT_REPONAME} | branch -> ${CIRCLE_BRANCH} | commit -> ${GIT_COMMIT_DESC}"  https://slack.com/api/files.upload
+          path: app/build/outputs/apk/
+          destination: /apk/
+      - store_artifacts:
+          path: app/build/outputs/mapping/
+          destination: /mapping/
 
-
- ## Run unit tests
+  ## Run unit tests
   test_unit:
     <<: *android_config
     steps:
       - checkout
       - *restore_cache
       - run:
-          name: Chmod permissions #if permsission for Gradlew Dependencies fail, use this.
+          name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
           command: sudo chmod +x ./gradlew
       - run:
           name: Download dependencies
@@ -158,7 +98,7 @@ jobs:
           path: app/build/test-results/
           destination: /test-results/
 
-  ##Deploy release APK to Fabric Beta
+  ## Deploy release APK to Fabric Beta
   deploy:
     <<: *android_config
     steps:
@@ -180,22 +120,13 @@ workflows:
   version: 2
   workflow:
     jobs:
-      - check-build:
+      - build_release
+      - test_unit
+      - deploy:
           filters:
             branches:
-              ignore:
+              only:
                 - master
-                - develop
-            requires:
-              -test_unit
-      - dev-build:
-          filters:
-            branches:
-              only: develop
-            requires:
-              -test_unit
-
-      - prod-build:
-          filters:
-            branches:
-              only: master
+          requires:
+            - build_release
+            - test_unit
