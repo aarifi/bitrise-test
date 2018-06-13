@@ -48,10 +48,7 @@ references:
 
 jobs:
   check-build:
-    docker:
-      # specify the version you desire here
-      - image: circleci/android:api-27-alpha
-    working_directory: ~/code
+    <<: *android_config
     steps:
       - checkout
       - run: echo "Running..."
