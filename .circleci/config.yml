@@ -171,7 +171,6 @@ jobs:
 #          name: Deploy to Fabric Beta
 #          command: ./gradlew -PciBuild=true :app:crashlyticsUploadDistributionRelease
 
-
 workflows:
   version: 2
   workflow:
