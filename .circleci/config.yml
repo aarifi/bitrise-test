@@ -183,13 +183,14 @@ workflows:
   version: 2
   workflow:
     jobs:
-      - test_unit
       - check-build:
           filters:
             branches:
               ignore:
                 - master
                 - develop
+            requires:
+              -test_unit
       - dev-build:
           filters:
             branches:
