@@ -119,6 +119,9 @@ jobs:
             command: ./gradlew androidDependencies
       - *save_cache
       - run:
+            name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+            command: chmod +x ./gradlew
+      - run:
             name: Initial build
             command: ./gradlew clean assembleRelease --no-daemon --stacktrace
       - store_artifacts:
