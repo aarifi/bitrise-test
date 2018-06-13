@@ -102,8 +102,8 @@ jobs:
             command: |
               export GIT_COMMIT_DESC=$(git log --format=oneline -n 1 | sed -E 's/^[^ ]+ (.*)$/\1/g')
               curl -F file=@app/build/outputs/apk/debug/app-debug.apk -F channels=$SLACK_CHANNEL -F token=$SLACK_API_TOKEN -F title="${CIRCLE_PROJECT_REPONAME} | branch -> ${CIRCLE_BRANCH} | commit -> ${GIT_COMMIT_DESC}"  https://slack.com/api/files.upload
-  prod-build:
-     <<: *android_config
+   build_release:
+      <<: *android_config
       steps:
         - checkout
         - *restore_cache
@@ -188,7 +188,7 @@ workflows:
               only: develop
             requires:
               -test_unit
-      - prod-build:
+      - build_release:
           filters:
             branches:
               only: master
