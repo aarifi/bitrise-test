@@ -86,11 +86,53 @@ jobs:
             command: |
               export GIT_COMMIT_DESC=$(git log --format=oneline -n 1 | sed -E 's/^[^ ]+ (.*)$/\1/g')
               curl -F file=@app/build/outputs/apk/release/app-release.apk -F channels=$SLACK_CHANNEL -F token=$SLACK_API_TOKEN -F title="${CIRCLE_PROJECT_REPONAME} | branch -> ${CIRCLE_BRANCH} | commit -> ${GIT_COMMIT_DESC}"  https://slack.com/api/files.upload
+ ## Run unit tests
+  test_unit:
+    <<: *android_config
+    steps:
+      - checkout
+      - *restore_cache
+      - run:
+          name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+          command: sudo chmod +x ./gradlew
+      - run:
+          name: Download dependencies
+          command: ./gradlew androidDependencies
+      - *save_cache
+      - run:
+          name: Run unit tests
+          command: ./gradlew -PciBuild=true :app:testDebugUnitTest
+      - *persist_debug_workspace
+      - store_artifacts:
+          path: app/build/reports/
+          destination: /reports/
+      - store_test_results:
+          path: app/build/test-results/
+          destination: /test-results/
+
+  ## Deploy release APK to Fabric Beta
+  deploy:
+    <<: *android_config
+    steps:
+      - checkout
+      - *attach_release_workspace
+      - *restore_cache
+
+      - run:
+          name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
+          command: sudo chmod +x ./gradlew
+      - run:
+          name: Download dependencies
+          command: ./gradlew androidDependencies
+#      - run:
+#          name: Deploy to Fabric Beta
+#          command: ./gradlew -PciBuild=true :app:crashlyticsUploadDistributionRelease
 
 workflows:
   version: 2
   deploy:
     jobs:
+      - test_unit
       - check-build:
           filters:
             branches:
